@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; font-src 'self' data: blob:; img-src 'self' data: blob:; connect-src 'self' https://api.anthropic.com; worker-src 'self' blob:; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="description" content="Turn lecture slides, PDFs and notes into a two-page summary sheet and a revision slideshow.">
+<title>Crib: lecture to revision kit</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+<script src="vendor/jszip.min.js" defer></script>
+<script src="vendor/mammoth.browser.min.js" defer></script>
+<script src="vendor/jspdf.umd.min.js" defer></script>
+<script type="module" src="app.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand"><span class="brand-mark" aria-hidden="true"></span>Crib</div>
+    <button class="btn ghost small" id="newBtn" hidden>New lecture</button>
+  </header>
+
+  <main>
+    <section id="input">
+      <div class="hero">
+        <div>
+          <h1>Lecture in, revision kit out</h1>
+          <p class="lede">Drop in the slides, PDFs and notes from a lecture. You’ll get a two‑page summary sheet and a slide deck to revise from, both downloadable as PDFs.</p>
+        </div>
+        <div class="panel">
+          <div class="drop" id="drop" tabindex="0" role="button" aria-label="Add lecture files">
+            <strong>Drop lecture files here</strong>
+            <span>PDF, PowerPoint (.pptx), Word (.docx), text, or photos of handwritten notes</span><br>
+            <button class="btn" type="button" id="pick">Choose files</button>
+            <input type="file" id="fileInput" multiple hidden accept=".pdf,.pptx,.docx,.txt,.md,.markdown,.csv,image/*">
+          </div>
+          <ul class="files" id="fileList"></ul>
+          <label class="field">Notes <small>(optional, paste anything extra)</small>
+            <textarea id="pasted" placeholder="Paste your own notes, or what the lecturer said was important"></textarea>
+          </label>
+          <label class="field">Module or topic <small>(optional)</small>
+            <input id="hint" type="text" placeholder="e.g. COM518 Operating Systems, Week 4: Scheduling">
+          </label>
+          <details class="keybox" id="keyBox">
+            <summary id="keySummary">Add your Claude API key</summary>
+            <label class="field">API key <small>(starts with sk-ant-)</small>
+              <input id="apiKey" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="sk-ant-…">
+            </label>
+            <label class="check"><input type="checkbox" id="rememberKey"> Remember the key on this device</label>
+            <label class="field">Model
+              <select id="model">
+                <option value="claude-sonnet-5-5">Claude Sonnet 5.5 (recommended)</option>
+                <option value="claude-opus-5-5">Claude Opus 5.5 (most thorough, costs more)</option>
+                <option value="claude-haiku-5-5">Claude Haiku 5.5 (fastest, cheapest)</option>
+              </select>
+            </label>
+            <p class="notice">Your key is sent only from this browser to Anthropic. Create one at <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener noreferrer">console.anthropic.com</a> and set a monthly spend limit on it.</p>
+            <button class="btn small" type="button" id="forgetKey">Forget key</button>
+          </details>
+          <div class="go"><button class="btn primary" id="goBtn">Make my revision kit</button></div>
+          <div class="status" id="status" role="status" aria-live="polite"><span class="pulse"></span><span class="msg"></span><button class="btn small" id="stopBtn" hidden>Stop</button></div>
+        </div>
+      </div>
+      <section class="recent" id="recent" hidden>
+        <h2>Recent kits on this device</h2>
+        <ul id="recentList"></ul>
+      </section>
+    </section>
+
+    <section id="results">
+      <div class="res-head">
+        <div>
+          <h2 id="resTitle"></h2>
+          <p id="resMeta"></p>
+        </div>
+        <div class="tabs" role="tablist">
+          <button role="tab" id="tabSheet" aria-selected="true">Summary sheet</button>
+          <button role="tab" id="tabSlides" aria-selected="false">Slideshow</button>
+        </div>
+      </div>
+
+      <div id="paneSheet">
+        <div class="toolbar">
+          <button class="btn" id="dlSheet">Download summary PDF</button>
+          <button class="btn" id="dlAll1">Download everything (.zip)</button>
+          <span class="spacer"></span>
+        </div>
+        <article class="sheet" id="sheet"></article>
+      </div>
+
+      <div id="paneSlides" hidden>
+        <div class="toolbar">
+          <button class="btn" id="dlSlides">Download slides PDF</button>
+          <button class="btn" id="dlAll2">Download everything (.zip)</button>
+          <span class="spacer"></span>
+        </div>
+        <div class="deck" id="deck">
+          <div class="stage" id="stage" tabindex="0" aria-roledescription="slideshow"></div>
+          <div class="deck-nav">
+            <button class="btn" id="prev" aria-label="Previous slide">Back</button>
+            <span class="count" id="count"></span>
+            <button class="btn" id="next" aria-label="Next slide">Next</button>
+            <span class="spacer"></span>
+            <button class="btn" id="focusBtn">Present</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+</body>
+</html>
